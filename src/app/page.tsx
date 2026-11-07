@@ -7,6 +7,7 @@ import Floor from "./restaurant-floor";
 import ScenarioEditor from "./scenario-editor";
 import { preservePay } from "@/lib/scenario-optimizer";
 import { diningTableCount } from "@/lib/restaurant-layout";
+import { toggleDrive } from "@/lib/service-quality";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -869,7 +870,7 @@ export default function Home() {
                       type="checkbox"
                       checked={base.driveThrough}
                       onChange={(e) => {
-                        const c = { ...base, driveThrough: e.target.checked };
+                        const c = toggleDrive(base, e.target.checked);
                         setBase(c);
                         setDraft(c);
                         setScenario(null);

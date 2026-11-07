@@ -24,6 +24,7 @@ import {
 } from "./menu-pricing";
 import { scheduleOperations } from "./advanced-operations";
 export type Channel = "dineIn" | "pickup" | "doordash" | "driveThrough";
+import { driveCoverage, serviceQuality } from "./service-quality";
 export type MenuItem = { name: string; price: number; popularity: number };
 export type PresetId = "takeout" | "small" | "large";
 export type StaffMember = {
@@ -185,6 +186,7 @@ export function laborCost(c: Config) {
   );
 }
 export type Order = {
+  driveBackIndex?: number;
   quantity?: number;
   effectivePriceChange?: number;
   appliedDeal?: string;
@@ -254,6 +256,10 @@ export type Result = {
   channels: Record<Channel, number>;
 };
 export function validateConfig(c: Config) {
+  if (!driveCoverage(c))
+    throw new Error(
+      "Drive-through needs a backroom or dedicated drive-through worker covering all store hours. Adjust roles and shifts in Staff.",
+    );
   validateDeals(c);
   if (c.staffPlan !== undefined) {
     validateStaffPlan(c.staffPlan);
@@ -440,7 +446,7 @@ export function simulate(
   );
   const physicalTables = diningTableCount(c);
   const floorPlan = restaurantLayout(c);
-  const tableSizes = floorPlan.tables.map(t=>t.seats);
+  const tableSizes = floorPlan.tables.map((t) => t.seats);
   const maximumPartySize = Math.max(1, ...tableSizes);
   const orders: Order[] = Array.from({ length: n }, (_, i): Order => {
     const a = rng(),
@@ -616,10 +622,16 @@ export function simulate(
       o.fee = o.channel === "doordash" ? o.subtotal * c.fee : 0;
     }
   for (const o of orders)
-    o.happiness = customerHappiness(
-      o.wait,
-      o.effectivePriceChange ?? c.priceChange,
-      o.status,
+    o.happiness = Math.max(
+      1,
+      Math.min(
+        5,
+        customerHappiness(
+          o.wait,
+          o.effectivePriceChange ?? c.priceChange,
+          o.status,
+        ) + serviceQuality(c, o),
+      ),
     );
   const happiness = orders.length
     ? orders.reduce((sum, o) => sum + o.happiness!, 0) / orders.length

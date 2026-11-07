@@ -21,6 +21,7 @@ import {
   setStoreHours,
 } from "@/lib/staffing";
 import type { Deal } from "@/lib/menu-pricing";
+import { toggleDrive, driveCoverage } from "@/lib/service-quality";
 const groups: [StaffGroup, string][] = [
   ["cook", "Cooking"],
   ["front", "Front room"],
@@ -695,7 +696,7 @@ export default function ScenarioTabs({
               <input
                 type="checkbox"
                 checked={c.driveThrough}
-                onChange={(e) => onPatch({ driveThrough: e.target.checked })}
+                onChange={(e) => onPatch(toggleDrive(c, e.target.checked))}
               />
             </label>
             {c.driveThrough && (
@@ -710,7 +711,8 @@ export default function ScenarioTabs({
             <p className="field-hint">
               Demand modifiers multiply with price effects and store hours.
               Drive-through needs general front staff, a cashier or a dedicated
-              drive-through role.
+              drive-through role. Enabling the lane adds a dedicated shift if
+              backroom coverage is missing. Review it in Staff.
             </p>
           </>
         )}
@@ -729,8 +731,10 @@ export default function ScenarioTabs({
           </strong>
         </span>
         <p>
-          Value and wait time both affect customer happiness. Run the scenario
-          to see the combined outcome.
+          Value and wait time both affect customer happiness. Bussers improve
+          dining cleanliness, dishwashers improve service quality, and sales
+          improve value. Missing support can lower ratings. Run the scenario to
+          see the combined outcome.
         </p>
       </div>
     </>

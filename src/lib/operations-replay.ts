@@ -375,7 +375,9 @@ export function buildReplay(config: Config, orders: Order[]) {
                 x: plan.tables[o.tableId].x + 49,
                 y: plan.tables[o.tableId].y + 20,
               }
-            : pickupPoint;
+            : o.channel === "driveThrough"
+              ? { x: 320, y: 42 }
+              : pickupPoint;
         const path =
           o.tableId !== undefined
             ? [
@@ -383,19 +385,23 @@ export function buildReplay(config: Config, orders: Order[]) {
                 { x: 330, y: 225 },
                 ...tableRoute({ x: 365, y: 225 }, o.tableId, target),
               ]
-            : [
-                pass,
-                { x: 280, y: 225 },
-                { x: 280, y: pickupPoint.y },
-                pickupPoint,
-              ];
+            : o.channel === "driveThrough"
+              ? [pass, { x: 320, y: 225 }, target]
+              : [
+                  pass,
+                  { x: 280, y: 225 },
+                  { x: 280, y: pickupPoint.y },
+                  pickupPoint,
+                ];
         add(
           fetch,
           end,
           path,
           o.tableId !== undefined
             ? `Serving table ${o.tableId + 1}`
-            : "Handing over pickup",
+            : o.channel === "driveThrough"
+              ? "Serving drive-through"
+              : "Handing over pickup",
           { orderId: o.id, carry: o.tableId !== undefined ? "plate" : "bag" },
         );
         position = target;
@@ -455,6 +461,17 @@ export function buildReplay(config: Config, orders: Order[]) {
                 end: o.prepSupportEnd!,
                 target: { x: 240, y: 120 },
                 state: "Preparing ingredients",
+                orderId: o.id,
+              },
+            ]
+          : []),
+        ...(o.driveBackIndex === person.index && Number.isFinite(o.serviceStart)
+          ? [
+              {
+                start: o.serviceStart!,
+                end: o.finish,
+                target: { x: 320, y: 42 },
+                state: "Serving drive-through",
                 orderId: o.id,
               },
             ]
@@ -563,6 +580,11 @@ export function buildReplay(config: Config, orders: Order[]) {
       collectionArrival,
       (o) => o.serviceStart ?? o.finish,
     );
+  const driveSlots = slots(
+    orders.filter((o) => o.channel === "driveThrough"),
+    (o) => o.arrival,
+    (o) => (Number.isFinite(o.finish) ? o.finish + 0.1 : duration),
+  );
   for (const o of orders) {
     const short = o.id.replace("MSK-", "#");
     if (Number.isFinite(o.start)) {
@@ -791,19 +813,15 @@ export function buildReplay(config: Config, orders: Order[]) {
       addEvent(end, `${short} collected`, kind, `${o.id}-collected`);
     } else {
       const end = Number.isFinite(o.finish) ? o.finish : duration + 3,
-        rank = orders.filter(
-          (x) =>
-            x.channel === "driveThrough" &&
-            x.arrival < o.arrival &&
-            x.finish > o.arrival,
-        ).length;
+        rank = driveSlots.get(o.id) ?? 0;
       const laneY = 17,
         start = { x: plan.width + 70, y: laneY },
-        wait = { x: plan.width - 130 - rank * 59, y: laneY },
+        wait = { x: 430 + rank * 66, y: laneY },
         window = { x: 365, y: laneY };
-      const service = Number.isFinite(o.serviceStart)
-        ? o.serviceStart!
-        : end - 1;
+      const service = Math.max(
+        o.arrival,
+        Number.isFinite(o.serviceStart) ? o.serviceStart! : end - 1,
+      );
       actor(`${o.id}-car`, `${short} · drive-through`, "car", [
         {
           start: o.arrival - 1,
@@ -821,7 +839,7 @@ export function buildReplay(config: Config, orders: Order[]) {
         {
           start: end,
           end: end + 1.2,
-          path: [window, { x: -70, y: laneY }],
+          path: [end>service?window:wait, { x: -70, y: laneY }],
           state: "Departing",
         },
       ]);

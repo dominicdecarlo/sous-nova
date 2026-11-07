@@ -70,7 +70,9 @@ export function scheduleOperations(c: Config, orders: Order[]) {
       o.finish = o.arrival;
       continue;
     }
-    const eligible=tables.map((at,i)=>plan.tables[i].seats>=(o.partySize??1)?at:Infinity);
+    const eligible = tables.map((at, i) =>
+      plan.tables[i].seats >= (o.partySize ?? 1) ? at : Infinity,
+    );
     const table =
       o.channel === "dineIn" ? eligible.indexOf(Math.min(...eligible)) : -1;
     const eligibleAt = Math.max(o.arrival, table < 0 ? 0 : tables[table]);
@@ -138,15 +140,20 @@ export function scheduleOperations(c: Config, orders: Order[]) {
       o.channel === "dineIn"
         ? ["front", "waiter"]
         : o.channel === "driveThrough"
-          ? ["front", "cashier", "driveThrough"]
+          ? ["driveThrough", "prep", "dishwasher"]
           : ["front", "cashier"];
     const handoff = best(
-      roles(front, allowed),
+      roles(
+        o.channel === "driveThrough" ? [...front, ...back] : front,
+        allowed,
+      ),
       Math.max(o.ready, o.channel === "driveThrough" ? drive : 0),
       length,
     );
     if (handoff.resource) {
-      o.serverId = handoff.resource.index;
+      if (handoff.resource.person?.group === "back")
+        o.driveBackIndex = handoff.resource.index;
+      else o.serverId = handoff.resource.index;
       o.serviceStart = handoff.time;
       o.finish = handoff.time + length;
       reserve(handoff.resource, handoff.time, length);

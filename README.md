@@ -108,3 +108,9 @@ This local app has not been published or connected to any live restaurant servic
 The automated suite covers deterministic replay, financial reconciliation, zero-seat takeout, four-chair layouts, parties of one to four, role eligibility, staff/station/table non-overlap, staggered shifts and payroll, dining-hour routing, store-hour changes, prep/dishwashing/bussing animation, individual/global prices, BOGO inventory, threshold discounts and non-stacking, event demand, and Ask Sous with detailed assignments. Run npm test, npm run typecheck and npm run build.
 
 The detailed scheduler is in src/lib/advanced-operations.ts; staffing helpers in src/lib/staffing.ts; basket/deal pricing in src/lib/menu-pricing.ts; tabbed controls in src/app/scenario-tabs.tsx. Old JSON configurations without staffPlan retain the legacy queue scheduler until staffing or hours are edited.
+
+## Drive-through and service quality
+
+Drive-through vehicles use deterministic sedan, pickup-truck and SUV bodies in varied paint colors. They arrive, queue, collect orders and leave along the drive lane. Turning on the lane automatically adds a dedicated drive-through shift when backroom coverage is missing. Role-based scenarios require continuous backroom or drive-through coverage throughout store hours. Backroom workers share the same task calendar across prep, washing and drive service, so one person cannot perform overlapping jobs.
+
+For completed orders, an active dishwasher adds 0.15 to modeled happiness; missing dishwashing subtracts 0.12. Dine-in customers gain 0.20 with a dedicated busser. Flexible front staff or waiters avoid a dedicated-bussing penalty, while missing all table-clearing support subtracts 0.20. The final rating stays within 1–5. Sales and price discounts affect perceived value through effective basket prices; extra demand can also increase waits and reduce happiness. These are explicit game assumptions, not measured customer ratings.

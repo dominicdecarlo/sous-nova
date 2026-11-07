@@ -1,3 +1,4 @@
+import DriveVehicle from "./drive-vehicle";
 import { memo } from "react";
 import type { ReplayActor } from "@/lib/operations-replay";
 import { hash } from "@/lib/operations-replay";
@@ -22,40 +23,7 @@ function FloorActor({
         : action === "plate"
           ? Math.sin(phase) * 2
           : step * 0.6;
-  if (actor.kind === "car")
-    return (
-      <g
-        data-actor-id={actor.id}
-        transform={`translate(${actor.position.x} ${actor.position.y}) rotate(${actor.angle})`}
-        opacity={actor.opacity}
-      >
-        <title>{`${actor.name}: ${actor.segment.state}`}</title>
-        <rect
-          x="-24"
-          y="-11"
-          width="48"
-          height="22"
-          rx="8"
-          fill="#000"
-          opacity=".1"
-          transform="translate(1 3)"
-        />
-        <rect
-          x="-24"
-          y="-11"
-          width="48"
-          height="22"
-          rx="8"
-          fill={actor.color}
-        />
-        <rect x="-8" y="-8" width="18" height="16" rx="3" fill="#d7e8e4" />
-        <path d="M-1 -8V8" stroke="#8fa6a1" strokeWidth="2" />
-        <rect x="-18" y="-13" width="10" height="3" rx="1" fill="#4c5147" />
-        <rect x="-18" y="10" width="10" height="3" rx="1" fill="#4c5147" />
-        <rect x="14" y="-9" width="5" height="3" rx="1" fill="#fbebad" />
-        <rect x="14" y="6" width="5" height="3" rx="1" fill="#fbebad" />
-      </g>
-    );
+  if (actor.kind === "car") return <DriveVehicle actor={actor} />;
   return (
     <g
       data-actor-id={actor.id}
